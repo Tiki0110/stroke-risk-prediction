@@ -23,3 +23,5 @@ This file prepares a finalized, clean dataset ready for training a neural networ
 ---
 
 Future reports (e.g., model training, evaluation) will be added here as additional `.qmd` files.
+
+Delete placeholder report file
