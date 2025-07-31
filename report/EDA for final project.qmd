@@ -1,0 +1,176 @@
+---
+title: "EDA for final project"
+author: "Tiki Zhai"
+date: "`r Sys.Date()`"
+format:
+  html:
+    toc: true       
+    toc-depth: 2  
+    number-sections: true
+---
+
+# Introduction
+
+This document summarizes the structure of the dataset, performs exploratory data analysis (EDA), and identifies missing or inconsistent data. The goal is to prepare a clean dataset for stroke risk modeling using a neural network.
+
+## Set upˆ
+
+```{r setup, include=FALSE}
+library(tidyverse)
+```
+
+## Load the Raw dataset.
+
+```{r}
+stroke_raw <- read_csv(here::here("healthcare-dataset-stroke-data.csv"))
+```
+
+# Exploratory Data Analysis
+
+## Missing data Analysis
+
+### Make each column either numeric or factor to better assess the missing rows.
+
+```{r}
+# Initial type conversion (before handling special missing cases)
+stroke_raw <- stroke_raw |>
+  mutate(
+    age = as.numeric(age),
+    avg_glucose_level = as.numeric(avg_glucose_level),
+    hypertension = as.factor(hypertension),
+    heart_disease = as.factor(heart_disease),
+    stroke = as.factor(stroke),
+    gender = as.factor(gender),
+    ever_married = as.factor(ever_married),
+    work_type = as.factor(work_type),
+    residence_type = as.factor(Residence_type),
+    bmi = bmi,  # placeholder for now
+    smoking_status = smoking_status  # placeholder for now
+  )
+```
+
+### The bmi column is in character, which makes the NA values not detectable, similarly with smoking_status column, need to fix them.
+
+```{r}
+# Convert "N/A" and "Unknown" to NA and recast types
+stroke_raw <- stroke_raw |>
+  mutate(
+    bmi = as.numeric(na_if(bmi, "N/A")),
+    smoking_status = as.factor(na_if(smoking_status, "Unknown"))
+  ) |> select(-Residence_type)
+```
+
+### Explore the count and the percentage of the missing data with each column
+
+```{r}
+# Count and percent missing
+stroke_raw |> 
+  summarise(across(everything(), ~sum(is.na(.)))) |>
+  pivot_longer(everything(), names_to = "variable", values_to = "missing_count") |>
+  mutate(percent_missing = missing_count / nrow(stroke_raw) * 100) |>
+  arrange(desc(missing_count))
+```
+
+As we can see, there are only two columns with missing data which are smoking_status and bmi.
+
+## Summary statistics.
+
+### Numeric variables, summary statistics and visualizations
+
+#### Numeric variables's summary table showing Minimum, maximum, median, mean, etc.
+
+```{r}
+stroke_raw |>
+  select(age, avg_glucose_level, bmi) |>
+  summary()
+```
+
+#### Numeric variable's data visualization
+
+```{r}
+# Age
+stroke_raw |>
+  ggplot(aes(x = age)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  labs(title = "Age Distribution", x = "Age", y = "Count")
+
+# BMI
+stroke_raw |>
+  ggplot(aes(x = bmi)) +
+  geom_histogram(bins = 30, fill = "darkgreen", color = "white") +
+  labs(title = "BMI Distribution", x = "BMI", y = "Count")
+
+```
+
+### Density plot grouped by the outcome variable
+
+```{r}
+# BMI vs Stroke
+stroke_raw |>
+  ggplot(aes(x = stroke, y = bmi, fill = stroke)) +
+  geom_boxplot() +
+  labs(title = "BMI by Stroke Status", x = "Stroke", y = "BMI")
+
+# Glucose by Stroke
+stroke_raw |>
+  ggplot(aes(x = stroke, y = avg_glucose_level, fill = stroke)) +
+  geom_boxplot() +
+  labs(title = "Glucose Level by Stroke Status", x = "Stroke", y = "Glucose")
+```
+
+### Class imbalance of the outcome variable
+
+```{r}
+stroke_raw |>
+  count(stroke) |>
+  mutate(prop = round(n / sum(n), 3))
+```
+
+# Data interpolation
+
+## Interpolate the "bmi" column
+
+```{r}
+median_bmi <- median(stroke_raw$bmi, na.rm = TRUE)
+
+stroke_raw <- stroke_raw |>
+  mutate(bmi = if_else(is.na(bmi), median_bmi, bmi))
+
+```
+
+Chose median interpolation because it is robust to outliers and works well for clinical data
+
+## Interpolate the "Smoking status" column
+
+```{r}
+stroke_raw <- stroke_raw |>
+  mutate(smoking_status = fct_explicit_na(smoking_status, na_level = "Missing"))
+```
+
+## Inspect the missing status again.
+
+```{r}
+stroke_raw |> 
+  summarise(across(everything(), ~sum(is.na(.)))) |>
+  pivot_longer(everything(), names_to = "variable", values_to = "missing_count") |>
+  mutate(percent_missing = missing_count / nrow(stroke_raw) * 100) |>
+  arrange(desc(missing_count))
+```
+
+# Data dictionary of the dataframe
+
+## 📘 Data Dictionary
+
+| Variable | Type | Description |
+|--------------|--------------|--------------------------------------------|
+| age | Numeric | Age of the patient |
+| hypertension | Factor | 0 = No hypertension, 1 = Has hypertension |
+| heart_disease | Factor | 0 = No heart disease, 1 = Has heart disease |
+| ever_married | Factor | Marital status ("Yes" or "No") |
+| work_type | Factor | Type of work: "Private", "Self-employed", etc. |
+| residence_type | Factor | "Urban" or "Rural" |
+| avg_glucose_level | Numeric | Average glucose level in blood (mg/dL) |
+| bmi | Numeric | Body Mass Index (imputed with median if missing) |
+| smoking_status | Factor | "formerly smoked", "never smoked", "smokes", or "Missing" |
+| gender | Factor | "Male", "Female", or "Other" |
+| stroke | Factor | **Target variable**: 0 = No stroke, 1 = Had stroke |
