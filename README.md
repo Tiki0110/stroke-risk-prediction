@@ -64,6 +64,7 @@ The dataset includes demographic and clinical information for 5,110 individuals:
 
 *Source: Confidential educational dataset (use for academic purposes only).*
 
+📘 [Data Dictionary](data/data_dictionary.md)
 ---
 
 ## ✅ Project Status
