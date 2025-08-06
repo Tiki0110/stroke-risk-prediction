@@ -4,7 +4,7 @@ This folder contains the Quarto documents used to document and explain each stag
 
 ## 📑 Files
 
-### `01_data_cleaning_and_eda.qmd`
+### `EDA for final project.qmd`
 This Quarto file performs and documents:
 
 - Initial dataset loading and formatting
@@ -22,4 +22,19 @@ This file prepares a finalized, clean dataset ready for training a neural networ
 
 ---
 
-Future reports (e.g., model training, evaluation) will be added here as additional `.qmd` files.
+### `Modeling_and_PFI.ipynb`
+This Jupyter notebook file performs and documents:
+
+- Simple Exploratory Data Analysis using SQL
+  - count the number of people who had a stroke and those who did not
+  - explore min, max, and average age of participants
+- Preprocess the data before modeling
+  - One-hot Encoding
+  - Scaling (MinMaxScaler)
+- Create a function to select the best model among three algorithms based on recall.
+  - mitigate class imbalance in the target variable using the SMOTE method
+  - Build Artificial Neura Network model, KNN model and Random Forest model
+  - Execute three models and create a performance metrics table to compare them
+- Permutation Feature Importance (PFI)
+  - Create a plot showing the top 3 features that contribute most to stroke prediction.
+
